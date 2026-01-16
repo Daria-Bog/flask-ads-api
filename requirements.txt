@@ -1,5 +1,6 @@
 aiohttp
 sqlalchemy
 asyncpg
-pydantic
+pydantic[email]
 bcrypt
+PyJWT

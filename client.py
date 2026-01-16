@@ -3,31 +3,32 @@ import aiohttp
 
 async def main():
     async with aiohttp.ClientSession() as session:
-        # 1. Регистрация
-        async with session.post('http://localhost:8080/register',
-                                json={"email": "test@mail.com", "password": "secret_pass"}) as resp:
-            print(f"Регистрация: {resp.status}, {await resp.json()}")
+        # 1. Регистрация (теперь с валидацией)
+        await session.post('http://localhost:8080/register',
+                           json={"email": "daria@mail.com", "password": "mypassword"})
 
-        # 2. Логин
+        # 2. Логин -> Получаем настоящий JWT
         async with session.post('http://localhost:8080/login',
-                                json={"email": "test@mail.com", "password": "secret_pass"}) as resp:
-            data = await resp.json()
-            token = data.get("token")
-            print(f"Логин: {resp.status}, получен токен: {token}")
+                                json={"email": "daria@mail.com", "password": "mypassword"}) as resp:
+            token = (await resp.json())["token"]
 
-        headers = {"Authorization": token}
+        headers = {"Authorization": f"Bearer {token}"}
 
-        # 3. Создание объявления
+        # 3. Создание
         async with session.post('http://localhost:8080/ads',
-                                json={"title": "Продам кота", "description": "Кот ученый"},
+                                json={"title": "New Ad", "description": "Good item"},
                                 headers=headers) as resp:
-            ad_data = await resp.json()
-            ad_id = ad_data.get("id")
-            print(f"Создание: {resp.status}, ID: {ad_id}")
+            ad_id = (await resp.json())["id"]
 
-        # 4. Получение объявления
+        # 4. PATCH (Обновление)
+        async with session.patch(f'http://localhost:8080/ads/{ad_id}',
+                                 json={"title": "Updated Title"},
+                                 headers=headers) as resp:
+            print(f"Обновление: {resp.status}")
+
+        # 5. Получение
         async with session.get(f'http://localhost:8080/ads/{ad_id}') as resp:
-            print(f"Получение: {resp.status}, Данные: {await resp.json()}")
+            print(f"Итог: {await resp.json()}")
 
 if __name__ == '__main__':
     asyncio.run(main())

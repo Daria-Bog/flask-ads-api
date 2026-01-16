@@ -1,12 +1,16 @@
 import datetime
+import os
+import jwt
+import bcrypt
 from sqlalchemy import String, DateTime, func, Integer, ForeignKey
 from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-import bcrypt
-import os
+from pydantic import BaseModel, EmailStr, field_validator
 
-# Настройка БД
+# Настройки безопасности
 PG_DSN = os.getenv("PG_DSN", "postgresql+asyncpg://netology_user:netology_password@localhost:5432/ads_db")
+SECRET_KEY = "your_very_secret_key" # В реале брать из env
+ALGORITHM = "HS256"
 
 engine = create_async_engine(PG_DSN)
 Session = async_sessionmaker(bind=engine, expire_on_commit=False)
@@ -28,13 +32,33 @@ class Ad(Base):
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
     owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("app_users.id"), nullable=False)
 
-async def init_db():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+# --- Pydantic Схемы ---
+class UserSchema(BaseModel):
+    email: EmailStr
+    password: str
 
-# Функции для работы с паролями
+class AdCreateSchema(BaseModel):
+    title: str
+    description: str
+
+class AdUpdateSchema(BaseModel):
+    title: str | None = None
+    description: str | None = None
+
+# --- Утилиты ---
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 def check_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
+
+def create_token(user_id: int) -> str:
+    payload = {
+        "user_id": user_id,
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+async def init_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
