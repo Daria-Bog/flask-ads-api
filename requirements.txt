@@ -1,5 +1,5 @@
-Flask
-Flask-RESTful
-Flask-CORS
-Flask-JWT-Extended
-passlib
+aiohttp
+sqlalchemy
+asyncpg
+pydantic
+bcrypt

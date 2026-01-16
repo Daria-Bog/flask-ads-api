@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: ads_db_container
+    environment:
+      POSTGRES_USER: netology_user
+      POSTGRES_PASSWORD: netology_password
+      POSTGRES_DB: ads_db
+    ports:
+      - "5432:5432"
+
+  app:
+    build: .
+    container_name: ads_api_app
+    ports:
+      - "8080:8080"
+    environment:
+      # Указываем DSN через переменную окружения для гибкости
+      PG_DSN: "postgresql+asyncpg://netology_user:netology_password@db:5432/ads_db"
+    depends_on:
+      - db
