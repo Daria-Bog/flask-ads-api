@@ -22,6 +22,7 @@ async def auth_middleware(request: web.Request, handler):
                 token = token.split(" ")[1]
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             request["user_id"] = payload["user_id"]
+            print(f"DEBUG: Authorized user_id = {request['user_id']}")
         except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
             pass  # Если токен плохой, user_id останется None
 
